@@ -1,20 +1,12 @@
 import NxWelcome from './nx-welcome';
 
 import { Route, Routes, Link } from 'react-router-dom';
-import { User } from '@rp-hris/shared';
 
 export function App() {
-  // Sample Usage of the User Context
-  const user: User = {
-    id: "1",
-    name: "John Doe",
-    email:"john@gmail.com"
-  }
+
   return (
     <div>
       <NxWelcome title="@rp-hris/rp-hris-web" />
-      {/* Sample Usage of the User Context */}
-      <pre>{JSON.stringify(user, null , 2)}</pre>
 
       {/* START: routes */}
       {/* These routes and navigation have been generated for you */}
