@@ -8,6 +8,12 @@
     },
     {
       "path": "./apps/rp-hris-web"
+    },
+    {
+      "path": "./apps/rp-hris-api-e2e"
+    },
+    {
+      "path": "./apps/rp-hris-api"
     }
   ]
 }
