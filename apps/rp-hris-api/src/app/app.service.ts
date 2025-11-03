@@ -9,8 +9,8 @@ export class AppService {
     const user: User = {
       id: "1",
       name: "John Doe",
-      email:"john@gmail.com"
+      email: "john@gmail.com"
     }
-    return ({ message: 'Hello API', user: user });
+    return ({ message: 'Hello API', user });
   }
 }

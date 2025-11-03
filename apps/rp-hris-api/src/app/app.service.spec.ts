@@ -14,7 +14,11 @@ describe('AppService', () => {
 
   describe('getData', () => {
     it('should return "Hello API"', () => {
-      expect(service.getData()).toEqual({message: 'Hello API'});
+      expect(service.getData()).toEqual({message: 'Hello API', user: {
+          id: "1",
+          name: "John Doe",
+          email: "john@gmail.com"
+        }});
     });
   });
 });
