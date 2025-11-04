@@ -1,15 +1,13 @@
 /* eslint-disable */
-import { readFileSync } from 'fs';
+const { readFileSync } = require('fs');
+const { resolve } = require('path');
 
-// Reading the SWC compilation config for the spec files
-const swcJestConfig = JSON.parse(
-  readFileSync(`${__dirname}/.spec.swcrc`, 'utf-8')
-);
-
-// Disable .swcrc look-up by SWC core because we're passing in swcJestConfig ourselves
+// Read SWC config - __dirname works in CommonJS
+const swcSpecPath = resolve(__dirname, '.spec.swcrc');
+const swcJestConfig = JSON.parse(readFileSync(swcSpecPath, 'utf-8'));
 swcJestConfig.swcrc = false;
 
-export default {
+module.exports = {
   displayName: '@rp-hris/api-e2e',
   preset: '../../jest.preset.js',
   globalSetup: '<rootDir>/src/support/global-setup.ts',
