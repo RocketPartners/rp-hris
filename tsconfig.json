@@ -4,16 +4,16 @@
   "files": [],
   "references": [
     {
-      "path": "./apps/rp-hris-web-e2e"
+      "path": "./apps/web-e2e"
     },
     {
-      "path": "./apps/rp-hris-web"
+      "path": "./apps/web"
     },
     {
-      "path": "./apps/rp-hris-api-e2e"
+      "path": "./apps/api-e2e"
     },
     {
-      "path": "./apps/rp-hris-api"
+      "path": "./apps/api"
     },
     {
       "path": "./libs/shared"

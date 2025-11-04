@@ -1,82 +1,192 @@
-# RpHris
+# RP-HRIS
 
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+A modern Human Resources Information System built with Nx monorepo architecture.
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/next?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## 📦 Project Structure
 
-## Finish your CI setup
+This workspace contains the following applications and libraries:
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/RFH7Zatavz)
+### Applications
 
+- **`@rp-hris/web`** - React web application built with Vite and TailwindCSS
+- **`@rp-hris/api`** - NestJS API server built with Webpack
+- **`@rp-hris/web-e2e`** - Playwright end-to-end tests for the web app
+- **`@rp-hris/api-e2e`** - Jest end-to-end tests for the API
 
-## Run tasks
+### Libraries
 
-To run the dev server for your app, use:
+- **`@rp-hris/shared`** - Shared utilities, types, and constants used across applications
+  - Types (User types, etc.)
+  - Constants (Philippine constants, Leave constants, App constants)
+  - Utilities (String, Date, Array, Validation, Number utils)
 
-```sh
-npx nx dev rp-hris-web
-```
+## 🚀 Getting Started
 
-To create a production bundle:
+### Development
 
-```sh
-npx nx build rp-hris-web
-```
-
-To see all available targets to run for a project, run:
-
-```sh
-npx nx show project rp-hris-web
-```
-
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
-
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Add new projects
-
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
+Run the web application in development mode:
 
 ```sh
-npx nx g @nx/next:app demo
+npx nx dev web
 ```
 
-To generate a new library, use:
+Run the API server in development mode:
 
 ```sh
-npx nx g @nx/react:lib mylib
+npx nx serve api
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+### Building
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Create a production bundle for the web app:
 
+```sh
+npx nx build web
+```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Build the API for production:
 
-## Install Nx Console
+```sh
+npx nx build api
+```
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+### Testing
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Run unit tests for a specific project:
 
-## Useful links
+```sh
+npx nx test web
+npx nx test api
+```
 
-Learn more:
+Run all tests in the workspace:
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/next?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```sh
+npx nx run-many -t test
+```
 
-And join the Nx community:
+Run end-to-end tests:
+
+```sh
+npx nx e2e web-e2e
+npx nx e2e api-e2e
+```
+
+### Linting
+
+Lint a specific project:
+
+```sh
+npx nx lint web
+npx nx lint api
+```
+
+Lint all projects:
+
+```sh
+npx nx run-many -t lint --all
+```
+
+## 📚 Using Shared Libraries
+
+Import from the shared library in your applications:
+
+```typescript
+// In web or api applications
+import { 
+  formatCurrency, 
+  formatDate, 
+  isValidEmail,
+  PHILIPPINE_REGIONS 
+} from '@rp-hris/shared';
+```
+
+## 🔍 Explore the Workspace
+
+To see all available targets for a project:
+
+```sh
+npx nx show project web
+npx nx show project api
+```
+
+Visualize the project dependency graph:
+
+```sh
+npx nx graph
+```
+
+List all projects in the workspace:
+
+```sh
+npx nx show projects
+```
+
+## ➕ Add New Projects
+
+Generate a new library:
+
+```sh
+npx nx g @nx/react:lib my-lib
+npx nx g @nx/js:lib my-lib
+```
+
+Generate a new NestJS module in the API:
+
+```sh
+npx nx g @nx/nest:module my-module --project=api
+```
+
+Generate a new React component in the web app:
+
+```sh
+npx nx g @nx/react:component my-component --project=web
+```
+
+You can use `npx nx list` to get a list of installed plugins, then run `npx nx list <plugin-name>` to see available generators.
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React, Vite, TailwindCSS
+- **Backend**: NestJS, TypeScript, Webpack
+- **Testing**: Jest, Playwright
+- **Build System**: Nx
+- **Package Manager**: npm
+
+## 📖 Documentation
+
+- [Nx Documentation](https://nx.dev)
+- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx)
+- [Shared Utilities Guide](./libs/shared/QUICK-REFERENCE.md)
+- [Utility Examples](./libs/shared/src/lib/utils/EXAMPLES.md)
+
+## 🔗 CI/CD Setup
+
+[Click here to finish setting up your workspace with Nx Cloud!](https://cloud.nx.app/connect/RFH7Zatavz)
+
+[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider)
+
+## 💡 Nx Console
+
+Install Nx Console for a better developer experience in your IDE:
+
+[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup)
+
+Nx Console lets you:
+- Run tasks with a GUI
+- Generate code easily
+- Get better autocompletion
+- Available for VSCode and IntelliJ
+
+## 🌐 Community & Support
+
 - [Discord](https://go.nx.dev/community)
 - [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- [Youtube channel](https://www.youtube.com/@nxdevtools)
+- [Nx blog](https://nx.dev/blog)
+
+## 📝 License
+
+Private - RocketPartners

@@ -4,12 +4,12 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug @rp-hris/rp-hris-api with Nx",
+      "name": "Debug @rp-hris/api with Nx",
       "runtimeExecutable": "npx",
       "runtimeArgs": [
         "nx",
         "serve",
-        "@rp-hris/rp-hris-api"
+        "@rp-hris/api"
       ],
       "env": {
         "NODE_OPTIONS": "--inspect=9229"
@@ -21,7 +21,7 @@
       ],
       "sourceMaps": true,
       "outFiles": [
-        "${workspaceFolder}/apps/rp-hris-api/dist/**/*.(m|c|)js",
+        "${workspaceFolder}/apps/api/dist/**/*.(m|c|)js",
         "!**/node_modules/**"
       ]
     }

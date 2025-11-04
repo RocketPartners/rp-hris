@@ -58,7 +58,7 @@
       "options": {
         "targetName": "test"
       },
-      "exclude": ["apps/rp-hris-api-e2e/**/*"]
+      "exclude": ["apps/api-e2e/**/*"]
     },
     {
       "plugin": "@nx/vite/plugin",
