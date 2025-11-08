@@ -17,11 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          filter: tree:0
           fetch-depth: 0
+          filter: tree:0
 
-      - name: Derive appropriate SHAs for base and head for `nx affected` commands
-        uses: nrwl/nx-set-shas@v4
+      # ⚡ CRITICAL: Start Nx Cloud Distributed Task Execution EARLY
+      # This enables intelligent task distribution across multiple agents
+      # Nx Cloud will automatically distribute tasks to 3 agents for optimal speed
+      - name: Start Nx Cloud CI Run
+        run: npx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
 
       - uses: actions/setup-node@v4
         with:
@@ -30,58 +33,82 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          # Prefer offline for speed since we have cache
+          NPM_CONFIG_PREFER_OFFLINE: true
 
-      - name: Install Playwright
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      # Run affected tasks only
-      - name: Lint affected projects
-        run: npx nx affected -t lint --parallel=3
+      # 🎯 Run affected tasks - Nx Cloud will distribute these automatically
+      # The affected command only runs what changed, DTE distributes the work
+      - name: Run affected tasks
+        run: |
+          npx nx affected -t lint test build typecheck --parallel=3
 
-      - name: Test affected projects
-        run: npx nx affected -t test --parallel=3 --coverage
-
-      - name: Build affected projects
-        run: npx nx affected -t build --parallel=3
-
-      - name: Typecheck affected projects
-        run: npx nx affected -t typecheck --parallel=3
-
-      - name: E2E affected projects
+      # E2E tests run separately since they're slower
+      - name: Run E2E tests for affected projects
         run: npx nx affected -t e2e --parallel=1
 
-      # Upload coverage reports (optional)
-      - name: Upload coverage
-        if: always()
-        uses: codecov/codecov-action@v3
-        with:
-          directory: ./coverage
-
-      # Nx Cloud self-healing CI
-      - name: Fix CI issues
+      # 🔍 Nx Cloud self-healing CI - suggests fixes for common issues
+      - name: Nx Cloud Fix CI
         run: npx nx fix-ci
         if: always()
 
-      # Check if web was affected
-      - name: Check if web was affected
-        id: check-web
+      # 📊 Check which apps were affected (for deployment decisions)
+      - name: Check affected apps
+        id: check-affected
         run: |
+          echo "Checking which apps were affected..."
+
+          # Check if web was affected
           if npx nx show projects --affected --json | grep -q '"web"'; then
-            echo "affected=true" >> $GITHUB_OUTPUT
+            echo "web-affected=true" >> $GITHUB_OUTPUT
+            echo "✅ Web app affected - will trigger deployment"
           else
-            echo "affected=false" >> $GITHUB_OUTPUT
+            echo "web-affected=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Web app NOT affected - skipping deployment"
           fi
 
-      # Check if api was affected
-      - name: Check if api was affected
-        id: check-api
-        run: |
+          # Check if api was affected
           if npx nx show projects --affected --json | grep -q '"api"'; then
-            echo "affected=true" >> $GITHUB_OUTPUT
+            echo "api-affected=true" >> $GITHUB_OUTPUT
+            echo "✅ API affected - will trigger deployment"
           else
-            echo "affected=false" >> $GITHUB_OUTPUT
+            echo "api-affected=false" >> $GITHUB_OUTPUT
+            echo "⏭️ API NOT affected - skipping deployment"
           fi
 
     outputs:
-      web-affected: ${{ steps.check-web.outputs.affected }}
-      api-affected: ${{ steps.check-api.outputs.affected }}
+      web-affected: ${{ steps.check-affected.outputs.web-affected }}
+      api-affected: ${{ steps.check-affected.outputs.api-affected }}
+
+  # 🤖 Nx Cloud Agents - These run automatically when DTE is enabled
+  # You don't need to define them explicitly - Nx Cloud manages them
+  # But if you want self-hosted agents, uncomment below:
+
+  # agent:
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 60
+  #   strategy:
+  #     matrix:
+  #       agent: [1, 2, 3]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #         filter: tree:0
+  #
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         cache: 'npm'
+  #
+  #     - run: npm ci
+  #     - run: npx playwright install --with-deps
+  #
+  #     # Start agent and wait for tasks from main job
+  #     - name: Start Nx Agent ${{ matrix.agent }}
+  #       run: npx nx-cloud start-agent
+  #       env:
+  #         NX_AGENT_NAME: ${{ matrix.agent }}
