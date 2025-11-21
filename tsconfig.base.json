@@ -16,6 +16,11 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["@rp-hris/source"]
+    "customConditions": ["@rp-hris/source"],
+    "baseUrl": ".",
+    "paths": {
+      "@rp-hris/shared": ["libs/shared/src/index.ts"],
+      "@rp-hris/shared/*": ["libs/shared/src/*"]
+    }
   }
 }
