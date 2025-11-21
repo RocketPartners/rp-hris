@@ -14,6 +14,8 @@ A comprehensive guide to commonly used Nx commands in the RP-HRIS workspace.
 - [Cache Management](#cache-management)
 - [Running Multiple Targets](#running-multiple-targets)
 - [Affected Commands](#affected-commands)
+- [Deployment](#-deployment)
+- [CI/CD Setup](#-cicd-setup)
 - [Workspace Management](#workspace-management)
 
 ---
@@ -435,6 +437,434 @@ npx nx affected -t test,lint --base=HEAD~1
 
 # Since last tag
 npx nx affected -t build --base=last-release
+```
+
+---
+
+## 🚀 Deployment
+
+### Deploy Web Application
+
+```bash
+# Build for production
+npx nx build web --configuration=production
+
+# Preview production build
+npx nx preview web
+
+# Deploy to Vercel
+npx nx build web --configuration=production
+cd dist/apps/web
+vercel --prod
+
+# Deploy to Netlify
+npx nx build web --configuration=production
+cd dist/apps/web
+netlify deploy --prod
+
+# Deploy to AWS S3
+npx nx build web --configuration=production
+aws s3 sync dist/apps/web s3://your-bucket-name --delete
+aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
+```
+
+### Deploy API Application
+
+```bash
+# Build for production
+npx nx build api --configuration=production
+
+# Deploy to AWS Elastic Beanstalk
+npx nx build api --configuration=production
+eb deploy
+
+# Deploy to Heroku
+npx nx build api --configuration=production
+git push heroku main
+
+# Deploy to Docker
+npx nx build api --configuration=production
+docker build -t rp-hris-api -f apps/api/Dockerfile .
+docker push your-registry/rp-hris-api:latest
+
+# Deploy to AWS ECS
+npx nx build api --configuration=production
+aws ecs update-service --cluster rp-hris --service api --force-new-deployment
+```
+
+### Environment-Specific Deployments
+
+```bash
+# Deploy to staging
+npx nx build web --configuration=staging
+npx nx build api --configuration=staging
+
+# Deploy to production
+npx nx build web --configuration=production
+npx nx build api --configuration=production
+
+# Deploy specific app only
+npx nx affected -t build --configuration=production --select=web
+npx nx affected -t build --configuration=production --select=api
+```
+
+---
+
+## 🔄 CI/CD Setup
+
+### Affected-Based CI/CD Strategy
+
+The key to efficient CI/CD in a monorepo is only building and deploying what has changed.
+
+### GitHub Actions - Affected Only
+
+Create `.github/workflows/ci.yml`:
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Determine what has changed
+  affected:
+    runs-on: ubuntu-latest
+    outputs:
+      web-affected: ${{ steps.check-web.outputs.affected }}
+      api-affected: ${{ steps.check-api.outputs.affected }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check if web is affected
+        id: check-web
+        run: |
+          if npx nx show projects --affected --base=origin/main | grep -q 'web'; then
+            echo "affected=true" >> $GITHUB_OUTPUT
+          else
+            echo "affected=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Check if api is affected
+        id: check-api
+        run: |
+          if npx nx show projects --affected --base=origin/main | grep -q 'api'; then
+            echo "affected=true" >> $GITHUB_OUTPUT
+          else
+            echo "affected=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Test and Build Web (only if affected)
+  web:
+    needs: affected
+    if: needs.affected.outputs.web-affected == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Lint web
+        run: npx nx lint web
+      
+      - name: Test web
+        run: npx nx test web --coverage
+      
+      - name: Build web
+        run: npx nx build web --configuration=production
+      
+      - name: E2E tests
+        run: npx nx e2e web-e2e
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist/apps/web
+
+  # Test and Build API (only if affected)
+  api:
+    needs: affected
+    if: needs.affected.outputs.api-affected == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Lint api
+        run: npx nx lint api
+      
+      - name: Test api
+        run: npx nx test api --coverage
+      
+      - name: Build api
+        run: npx nx build api --configuration=production
+      
+      - name: E2E tests
+        run: npx nx e2e api-e2e
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-dist
+          path: dist/apps/api
+
+  # Deploy Web (only if affected)
+  deploy-web:
+    needs: [affected, web]
+    if: needs.affected.outputs.web-affected == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist/apps/web
+      
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: dist/apps/web
+
+  # Deploy API (only if affected)
+  deploy-api:
+    needs: [affected, api]
+    if: needs.affected.outputs.api-affected == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: api-dist
+          path: dist/apps/api
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Deploy to AWS ECS
+        run: |
+          aws ecs update-service \
+            --cluster rp-hris \
+            --service api \
+            --force-new-deployment
+```
+
+### GitLab CI/CD - Affected Only
+
+Create `.gitlab-ci.yml`:
+
+```yaml
+stages:
+  - install
+  - check
+  - test
+  - build
+  - deploy
+
+variables:
+  NX_BRANCH: $CI_COMMIT_REF_NAME
+  NX_CLOUD_DISTRIBUTED_EXECUTION: 'true'
+
+install:
+  stage: install
+  script:
+    - npm ci
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - node_modules/
+
+check-affected:
+  stage: check
+  script:
+    - npx nx show projects --affected --base=origin/main > affected.txt
+    - cat affected.txt
+  artifacts:
+    paths:
+      - affected.txt
+
+test-web:
+  stage: test
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - apps/web/**/*
+        - libs/**/*
+  script:
+    - npx nx affected -t test,lint --base=origin/main --head=HEAD --parallel=3
+  dependencies:
+    - install
+
+test-api:
+  stage: test
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - apps/api/**/*
+        - libs/**/*
+  script:
+    - npx nx affected -t test,lint --base=origin/main --head=HEAD --parallel=3
+  dependencies:
+    - install
+
+build-web:
+  stage: build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - apps/web/**/*
+        - libs/**/*
+  script:
+    - npx nx build web --configuration=production
+  artifacts:
+    paths:
+      - dist/apps/web
+  dependencies:
+    - install
+
+build-api:
+  stage: build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - apps/api/**/*
+        - libs/**/*
+  script:
+    - npx nx build api --configuration=production
+  artifacts:
+    paths:
+      - dist/apps/api
+  dependencies:
+    - install
+
+deploy-web:
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - apps/web/**/*
+        - libs/**/*
+  script:
+    - npx vercel --prod --token=$VERCEL_TOKEN
+  dependencies:
+    - build-web
+  environment:
+    name: production-web
+    url: https://rp-hris.vercel.app
+
+deploy-api:
+  stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      changes:
+        - apps/api/**/*
+        - libs/**/*
+  script:
+    - aws ecs update-service --cluster rp-hris --service api --force-new-deployment
+  dependencies:
+    - build-api
+  environment:
+    name: production-api
+    url: https://api.rp-hris.com
+```
+
+### Nx Cloud Integration
+
+Enable distributed caching and task execution:
+
+```bash
+# Connect to Nx Cloud
+npx nx connect-to-nx-cloud
+
+# Add to CI
+export NX_CLOUD_ACCESS_TOKEN=your-token
+npx nx affected -t build,test,lint --base=origin/main --parallel=3
+```
+
+### Manual Deployment Commands
+
+```bash
+# Check what would be affected
+npx nx show projects --affected --base=origin/main
+
+# Build only affected apps
+npx nx affected -t build --base=origin/main --configuration=production
+
+# Deploy only web if affected
+if npx nx show projects --affected --base=origin/main | grep -q 'web'; then
+  npx nx build web --configuration=production
+  # deploy web...
+fi
+
+# Deploy only API if affected
+if npx nx show projects --affected --base=origin/main | grep -q 'api'; then
+  npx nx build api --configuration=production
+  # deploy api...
+fi
+```
+
+### Pre-Deployment Checklist
+
+```bash
+# 1. Run affected tests
+npx nx affected -t test --base=origin/main --parallel=3
+
+# 2. Run affected linting
+npx nx affected -t lint --base=origin/main --parallel=3
+
+# 3. Run affected e2e
+npx nx affected -t e2e --base=origin/main
+
+# 4. Build affected apps
+npx nx affected -t build --base=origin/main --configuration=production
+
+# 5. Check for type errors
+npx nx affected -t typecheck --base=origin/main
 ```
 
 ---
