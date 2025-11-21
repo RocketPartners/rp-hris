@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - develop
   pull_request:
 
 permissions:
@@ -16,28 +17,98 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          filter: tree:0
           fetch-depth: 0
+          filter: tree:0
 
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      # Uncomment this line to enable task distribution
-      # - run: npx nx start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="e2e-ci"
+      # ⚡ CRITICAL: Start Nx Cloud Distributed Task Execution EARLY
+      # This enables intelligent task distribution across multiple agents
+      # Nx Cloud will automatically distribute tasks to 3 agents for optimal speed
+      - name: Start Nx Cloud CI Run
+        run: npx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
 
-      # Cache node_modules
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
-      - run: npm ci
-      - run: npx playwright install --with-deps
+      - name: Install dependencies
+        run: npm ci
+        env:
+          # Prefer offline for speed since we have cache
+          NPM_CONFIG_PREFER_OFFLINE: true
 
-      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
-      # - run: npx nx-cloud record -- echo Hello World
-      # When you enable task distribution, run the e2e-ci task instead of e2e
-      - run: npx nx run-many -t lint test build typecheck e2e
-      # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
-      - run: npx nx fix-ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      # 🎯 Run affected tasks - Nx Cloud will distribute these automatically
+      # The affected command only runs what changed, DTE distributes the work
+      - name: Run affected tasks
+        run: |
+          npx nx affected -t lint test build typecheck --parallel=3
+
+      # E2E tests run separately since they're slower
+      - name: Run E2E tests for affected projects
+        run: npx nx affected -t e2e --parallel=1
+
+      # 🔍 Nx Cloud self-healing CI - suggests fixes for common issues
+      - name: Nx Cloud Fix CI
+        run: npx nx fix-ci
         if: always()
+
+      # 📊 Check which apps were affected (for deployment decisions)
+      - name: Check affected apps
+        id: check-affected
+        run: |
+          echo "Checking which apps were affected..."
+
+          # Check if web was affected
+          if npx nx show projects --affected --json | grep -q '"web"'; then
+            echo "web-affected=true" >> $GITHUB_OUTPUT
+            echo "✅ Web app affected - will trigger deployment"
+          else
+            echo "web-affected=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Web app NOT affected - skipping deployment"
+          fi
+
+          # Check if api was affected
+          if npx nx show projects --affected --json | grep -q '"api"'; then
+            echo "api-affected=true" >> $GITHUB_OUTPUT
+            echo "✅ API affected - will trigger deployment"
+          else
+            echo "api-affected=false" >> $GITHUB_OUTPUT
+            echo "⏭️ API NOT affected - skipping deployment"
+          fi
+
+    outputs:
+      web-affected: ${{ steps.check-affected.outputs.web-affected }}
+      api-affected: ${{ steps.check-affected.outputs.api-affected }}
+
+  # 🤖 Nx Cloud Agents - These run automatically when DTE is enabled
+  # You don't need to define them explicitly - Nx Cloud manages them
+  # But if you want self-hosted agents, uncomment below:
+
+  # agent:
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 60
+  #   strategy:
+  #     matrix:
+  #       agent: [1, 2, 3]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #         filter: tree:0
+  #
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         cache: 'npm'
+  #
+  #     - run: npm ci
+  #     - run: npx playwright install --with-deps
+  #
+  #     # Start agent and wait for tasks from main job
+  #     - name: Start Nx Agent ${{ matrix.agent }}
+  #       run: npx nx-cloud start-agent
+  #       env:
+  #         NX_AGENT_NAME: ${{ matrix.agent }}
