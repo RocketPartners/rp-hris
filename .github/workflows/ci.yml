@@ -12,19 +12,16 @@ permissions:
   contents: read
 
 jobs:
-  main:
+  # Main CI job - runs only affected tests, linting, and builds
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          filter: tree:0
+          fetch-depth: 0  # Required for Nx affected to work properly
 
-      # ⚡ CRITICAL: Start Nx Cloud Distributed Task Execution EARLY
-      # This enables intelligent task distribution across multiple agents
-      # Nx Cloud will automatically distribute tasks to 3 agents for optimal speed
-      - name: Start Nx Cloud CI Run
-        run: npx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
+      - name: Derive appropriate SHAs for base and head for Nx affected commands
+        uses: nrwl/nx-set-shas@v4
 
       - uses: actions/setup-node@v4
         with:
@@ -34,26 +31,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
         env:
-          # Prefer offline for speed since we have cache
           NPM_CONFIG_PREFER_OFFLINE: true
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      # 🎯 Run affected tasks - Nx Cloud will distribute these automatically
-      # The affected command only runs what changed, DTE distributes the work
-      - name: Run affected tasks
-        run: |
-          npx nx affected -t lint test build typecheck --parallel=3
+      # 🎯 Run affected tasks - only what changed
+      - name: Run lint for affected projects
+        run: npx nx affected -t lint --parallel=3
+
+      - name: Run tests for affected projects
+        run: npx nx affected -t test --parallel=3 --coverage
+
+      - name: Run typecheck for affected projects
+        run: npx nx affected -t typecheck --parallel=3
+
+      - name: Build affected projects
+        run: npx nx affected -t build --parallel=3
 
       # E2E tests run separately since they're slower
       - name: Run E2E tests for affected projects
         run: npx nx affected -t e2e --parallel=1
 
-      # 🔍 Nx Cloud self-healing CI - suggests fixes for common issues
-      - name: Nx Cloud Fix CI
-        run: npx nx fix-ci
-        if: always()
 
       # 📊 Check which apps were affected (for deployment decisions)
       - name: Check affected apps
@@ -83,32 +82,3 @@ jobs:
       web-affected: ${{ steps.check-affected.outputs.web-affected }}
       api-affected: ${{ steps.check-affected.outputs.api-affected }}
 
-  # 🤖 Nx Cloud Agents - These run automatically when DTE is enabled
-  # You don't need to define them explicitly - Nx Cloud manages them
-  # But if you want self-hosted agents, uncomment below:
-
-  # agent:
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 60
-  #   strategy:
-  #     matrix:
-  #       agent: [1, 2, 3]
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-  #         filter: tree:0
-  #
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-  #         cache: 'npm'
-  #
-  #     - run: npm ci
-  #     - run: npx playwright install --with-deps
-  #
-  #     # Start agent and wait for tasks from main job
-  #     - name: Start Nx Agent ${{ matrix.agent }}
-  #       run: npx nx-cloud start-agent
-  #       env:
-  #         NX_AGENT_NAME: ${{ matrix.agent }}

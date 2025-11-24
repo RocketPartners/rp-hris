@@ -1,7 +1,7 @@
 import NxWelcome from './nx-welcome';
 
 import { Route, Routes, Link } from 'react-router-dom';
-import { User } from '@rp-hris/shared';
+import { User } from '@rp-hris/models';
 
 export function App() {
   // Sample Usage of the User Context

@@ -12,6 +12,7 @@ permissions:
   id-token: write # Required for OIDC authentication (if using AWS/GCP/Azure)
 
 jobs:
+  # Check which apps were affected in the CI run
   check-affected:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -21,10 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          filter: tree:0
           fetch-depth: 0
 
-      - name: Derive appropriate SHAs for base and head for `nx affected` commands
+      - name: Derive appropriate SHAs for base and head for Nx affected commands
         uses: nrwl/nx-set-shas@v4
 
       - uses: actions/setup-node@v4
@@ -57,17 +57,17 @@ jobs:
             echo "⏭️ API was NOT affected - skipping deployment"
           fi
 
+  # Deploy Web App (only if affected)
   deploy-web:
     needs: check-affected
     if: needs.check-affected.outputs.web-affected == 'true'
     runs-on: ubuntu-latest
     environment:
       name: production-web
-      url: https://your-web-app.com # Update with your actual URL
+      url: https://your-web-app.com # TODO: Update with your actual URL
     steps:
       - uses: actions/checkout@v4
         with:
-          filter: tree:0
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -81,30 +81,20 @@ jobs:
       - name: Build web app
         run: npx nx build web --configuration=production
 
-      # Example: Deploy to Vercel
-      - name: Deploy to Vercel
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          npm install -g vercel
-          vercel --prod --token=$VERCEL_TOKEN --yes
-        working-directory: dist/apps/web
+      # TODO: Choose your deployment platform and uncomment the relevant section below
 
-      # Alternative: Deploy to AWS S3 + CloudFront
-      # - name: Configure AWS Credentials
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: arn:aws:iam::ACCOUNT_ID:role/GitHubActionsRole
-      #     aws-region: us-east-1
-
-      # - name: Deploy to S3
+      # Option 1: Deploy to Vercel
+      # - name: Deploy to Vercel
+      #   env:
+      #     VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      #     VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      #     VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       #   run: |
-      #     aws s3 sync dist/apps/web s3://your-bucket-name --delete
-      #     aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
+      #     npm install -g vercel
+      #     vercel --prod --token=$VERCEL_TOKEN --yes
+      #   working-directory: dist/apps/web
 
-      # Alternative: Deploy to Netlify
+      # Option 2: Deploy to Netlify
       # - name: Deploy to Netlify
       #   uses: nwtgck/actions-netlify@v2
       #   with:
@@ -116,17 +106,32 @@ jobs:
       #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
+      # Option 3: Deploy to AWS S3 + CloudFront
+      # - name: Configure AWS Credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: arn:aws:iam::ACCOUNT_ID:role/GitHubActionsRole
+      #     aws-region: us-east-1
+      #
+      # - name: Deploy to S3
+      #   run: |
+      #     aws s3 sync dist/apps/web s3://your-bucket-name --delete
+      #     aws cloudfront create-invalidation --distribution-id YOUR_DIST_ID --paths "/*"
+
+      - name: Deployment completed
+        run: echo "✅ Web app deployed successfully"
+
+  # Deploy API (only if affected)
   deploy-api:
     needs: check-affected
     if: needs.check-affected.outputs.api-affected == 'true'
     runs-on: ubuntu-latest
     environment:
       name: production-api
-      url: https://api.your-domain.com # Update with your actual URL
+      url: https://api.your-domain.com # TODO: Update with your actual URL
     steps:
       - uses: actions/checkout@v4
         with:
-          filter: tree:0
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -140,22 +145,35 @@ jobs:
       - name: Build API
         run: npx nx build api --configuration=production
 
-      # Example: Deploy to Railway
-      - name: Deploy to Railway
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          npm install -g @railway/cli
-          railway up --service api
-        working-directory: dist/apps/api
+      # TODO: Choose your deployment platform and uncomment the relevant section below
 
-      # Alternative: Deploy to AWS Elastic Beanstalk
+      # Option 1: Deploy to Railway
+      # - name: Deploy to Railway
+      #   env:
+      #     RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      #   run: |
+      #     npm install -g @railway/cli
+      #     railway up --service api
+      #   working-directory: dist/apps/api
+
+      # Option 2: Deploy to Render
+      # - name: Deploy to Render
+      #   env:
+      #     RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      #     RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+      #   run: |
+      #     curl -X POST "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+      #       -H "Authorization: Bearer $RENDER_API_KEY" \
+      #       -H "Content-Type: application/json" \
+      #       -d '{"clearCache": "clear"}'
+
+      # Option 3: Deploy to AWS Elastic Beanstalk
       # - name: Configure AWS Credentials
       #   uses: aws-actions/configure-aws-credentials@v4
       #   with:
       #     role-to-assume: arn:aws:iam::ACCOUNT_ID:role/GitHubActionsRole
       #     aws-region: us-east-1
-
+      #
       # - name: Deploy to Elastic Beanstalk
       #   run: |
       #     zip -r deploy.zip dist/apps/api
@@ -168,18 +186,7 @@ jobs:
       #       --environment-name production \
       #       --version-label ${{ github.sha }}
 
-      # Alternative: Deploy to Render
-      # - name: Deploy to Render
-      #   env:
-      #     RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-      #     RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
-      #   run: |
-      #     curl -X POST "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
-      #       -H "Authorization: Bearer $RENDER_API_KEY" \
-      #       -H "Content-Type: application/json" \
-      #       -d '{"clearCache": "clear"}'
-
-      # Alternative: Deploy to Heroku
+      # Option 4: Deploy to Heroku
       # - name: Deploy to Heroku
       #   uses: akhileshns/heroku-deploy@v3.13.15
       #   with:
@@ -188,6 +195,21 @@ jobs:
       #     heroku_email: "your-email@example.com"
       #     appdir: "dist/apps/api"
 
+      # Option 5: Deploy to Docker/Container Registry
+      # - name: Build and push Docker image
+      #   run: |
+      #     docker build -t your-registry/rp-hris-api:${{ github.sha }} -f apps/api/Dockerfile .
+      #     docker push your-registry/rp-hris-api:${{ github.sha }}
+      #
+      # - name: Deploy to Kubernetes/ECS
+      #   run: |
+      #     # Update your deployment with the new image
+      #     kubectl set image deployment/api api=your-registry/rp-hris-api:${{ github.sha }}
+
+      - name: Deployment completed
+        run: echo "✅ API deployed successfully"
+
+  # Summary of deployments
   deployment-summary:
     needs: [check-affected, deploy-web, deploy-api]
     if: always()

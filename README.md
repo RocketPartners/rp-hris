@@ -17,7 +17,7 @@ This workspace contains the following applications and libraries:
 
 ### Libraries
 
-- **`@rp-hris/shared`** - Shared utilities, types, and constants used across applications
+- **`@rp-hris/models`** - Shared models, utilities, types, and constants used across applications
   - Types (User types, etc.)
   - Constants (Philippine constants, Leave constants, App constants)
   - Utilities (String, Date, Array, Validation, Number utils)
@@ -100,7 +100,7 @@ import {
   formatDate, 
   isValidEmail,
   PHILIPPINE_REGIONS 
-} from '@rp-hris/shared';
+} from '@rp-hris/models';
 ```
 
 ## 🔍 Explore the Workspace

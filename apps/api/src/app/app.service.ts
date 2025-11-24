@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { User } from '@rp-hris/shared';
+import { User } from '@rp-hris/models';
 
 @Injectable()
 export class AppService {

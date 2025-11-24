@@ -16,7 +16,10 @@
       "path": "./apps/api"
     },
     {
-      "path": "./libs/shared"
+      "path": "./libs/models"
     },
+    {
+      "path": "./libs/ui-components"
+    }
   ]
 }

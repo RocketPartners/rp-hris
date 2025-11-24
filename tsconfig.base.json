@@ -19,8 +19,8 @@
     "customConditions": ["@rp-hris/source"],
     "baseUrl": ".",
     "paths": {
-      "@rp-hris/shared": ["libs/shared/src/index.ts"],
-      "@rp-hris/shared/*": ["libs/shared/src/*"]
+      "@rp-hris/models": ["libs/models/src/index.ts"],
+      "@rp-hris/models/*": ["libs/models/src/*"]
     }
   }
 }
