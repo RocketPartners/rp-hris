@@ -2,7 +2,15 @@ import React, { ReactNode, createContext, useContext } from 'react';
 
 type PaddingSize = 'none' | 'sm' | 'md' | 'lg';
 
-const CardContext = createContext<{ padding: PaddingSize }>({ padding: 'md' });
+export const CardContext = createContext<{ padding: PaddingSize } | null>(null);
+
+const useCardContext = () => {
+  const context = useContext(CardContext);
+  if (!context) {
+    return { padding: 'md' as PaddingSize };
+  }
+  return context;
+};
 
 export interface CardProps {
   children: ReactNode;
@@ -97,7 +105,7 @@ export const Card: React.FC<CardProps> & {
 };
 
 const CardHeader: React.FC<CardHeaderProps> = ({ children, className = '' }) => {
-  const { padding } = useContext(CardContext);
+  const { padding } = useCardContext();
   const borderClass = padding === 'none' ? '' : 'border-b border-gray-200';
   return (
     <div className={`${borderClass} ${headerSpacingStyles[padding]} ${className}`}>
@@ -111,7 +119,7 @@ const CardBody: React.FC<CardBodyProps> = ({ children, className = '' }) => (
 );
 
 const CardFooter: React.FC<CardFooterProps> = ({ children, className = '' }) => {
-  const { padding } = useContext(CardContext);
+  const { padding } = useCardContext();
   const borderClass = padding === 'none' ? '' : 'border-t border-gray-200';
   return (
     <div className={`${borderClass} ${footerSpacingStyles[padding]} ${className}`}>
