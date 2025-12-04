@@ -88,6 +88,9 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
             bg-white bg-opacity-75 z-10
             ${blur ? 'backdrop-blur-sm' : ''}
           `}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
         >
           <div className="flex flex-col items-center">
             <Spinner size={spinnerSize} />
