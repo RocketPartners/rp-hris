@@ -11,6 +11,10 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   onLeftIconClick?: () => void;
   /** Click handler for rightIcon. When provided, the icon becomes interactive (clickable). */
   onRightIconClick?: () => void;
+  /** Accessible label for the left icon button (required when onLeftIconClick is provided). */
+  leftIconAriaLabel?: string;
+  /** Accessible label for the right icon button (required when onRightIconClick is provided). */
+  rightIconAriaLabel?: string;
 }
 
 const sizeStyles = {
@@ -30,6 +34,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       rightIcon,
       onLeftIconClick,
       onRightIconClick,
+      leftIconAriaLabel,
+      rightIconAriaLabel,
       className = '',
       id,
       disabled,
@@ -68,7 +74,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 type="button"
                 onClick={onLeftIconClick}
                 className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-                tabIndex={-1}
+                aria-label={leftIconAriaLabel}
               >
                 {leftIcon}
               </button>
@@ -91,7 +97,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 type="button"
                 onClick={onRightIconClick}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-                tabIndex={-1}
+                aria-label={rightIconAriaLabel}
               >
                 {rightIcon}
               </button>
