@@ -91,8 +91,9 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
           role="status"
           aria-live="polite"
           aria-busy="true"
+          aria-label={label}
         >
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center" aria-hidden="true">
             <Spinner size={spinnerSize} />
             {label && <span className="mt-2 text-gray-600">{label}</span>}
           </div>
