@@ -10,6 +10,9 @@ export interface TabItem {
 
 export interface TabsProps {
   items: TabItem[];
+  /** Controlled active tab id. When provided, the component operates in controlled mode. */
+  activeId?: string;
+  /** Default active tab id for uncontrolled mode. Ignored when activeId is provided. */
   defaultActiveId?: string;
   onChange?: (id: string) => void;
   variant?: 'default' | 'pills' | 'underline';
@@ -19,16 +22,23 @@ export interface TabsProps {
 
 export const Tabs: React.FC<TabsProps> = ({
   items,
+  activeId: controlledActiveId,
   defaultActiveId,
   onChange,
   variant = 'default',
   fullWidth = false,
   className = '',
 }) => {
-  const [activeId, setActiveId] = useState(defaultActiveId || items[0]?.id);
+  const [internalActiveId, setInternalActiveId] = useState(defaultActiveId || items[0]?.id);
+  
+  // Use controlled activeId when provided, otherwise use internal state
+  const isControlled = controlledActiveId !== undefined;
+  const activeId = isControlled ? controlledActiveId : internalActiveId;
 
   const handleTabClick = (id: string) => {
-    setActiveId(id);
+    if (!isControlled) {
+      setInternalActiveId(id);
+    }
     onChange?.(id);
   };
 
