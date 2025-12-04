@@ -44,37 +44,69 @@ const statusSizeStyles = {
   '2xl': 'h-4 w-4',
 };
 
+/**
+ * Extracts initials from a name string.
+ * Handles edge cases like empty strings, whitespace-only names, and consecutive spaces.
+ * @param name - The name to extract initials from
+ * @returns Up to 2 uppercase characters representing the initials, or empty string if no valid characters
+ */
 const getInitials = (name: string): string => {
   return name
-    .split(' ')
+    .trim()
+    .split(/\s+/)
+    .filter((part) => part.length > 0)
     .map((part) => part[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
 };
 
+/**
+ * Generates a deterministic background color based on the provided name.
+ * Uses a hash function to consistently assign the same color to the same name.
+ * 
+ * Edge case handling:
+ * - Empty strings, whitespace-only, or names with only special characters will 
+ *   still produce a valid color (defaults to a distributed selection based on 
+ *   character codes, or falls back to a neutral color for truly empty input)
+ * 
+ * Color selection:
+ * - Uses a curated list of distinct colors for better visual differentiation
+ * - Colors are chosen to have good contrast against white text
+ * 
+ * @param name - The name to generate a color for
+ * @returns A Tailwind CSS background color class
+ */
 const getColorFromName = (name: string): string => {
+  // Curated color list with distinct hues for better visual differentiation
   const colors = [
     'bg-red-500',
     'bg-orange-500',
-    'bg-amber-500',
-    'bg-yellow-500',
-    'bg-lime-500',
-    'bg-green-500',
+    'bg-amber-600',
     'bg-emerald-500',
     'bg-teal-500',
-    'bg-cyan-500',
-    'bg-sky-500',
+    'bg-cyan-600',
     'bg-blue-500',
     'bg-indigo-500',
     'bg-violet-500',
-    'bg-purple-500',
-    'bg-fuchsia-500',
+    'bg-purple-600',
     'bg-pink-500',
-    'bg-rose-500',
   ];
-  const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return colors[hash % colors.length];
+  
+  // Handle empty or whitespace-only names
+  const trimmedName = name.trim();
+  if (trimmedName.length === 0) {
+    return 'bg-gray-500';
+  }
+  
+  // Use a better hash function (djb2) for more even distribution
+  const hash = trimmedName.split('').reduce((acc, char) => {
+    return ((acc << 5) + acc) + char.charCodeAt(0);
+  }, 5381);
+  
+  // Ensure positive index
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
 };
 
 export const Avatar: React.FC<AvatarProps> = ({
