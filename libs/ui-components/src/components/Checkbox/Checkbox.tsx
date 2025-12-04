@@ -43,6 +43,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             type="checkbox"
             id={checkboxId}
             disabled={disabled}
+            aria-invalid={!!error}
             className={`
               ${sizeStyles[size]}
               rounded border-gray-300
