@@ -66,9 +66,9 @@ const getInitials = (name: string): string => {
  * Uses a hash function to consistently assign the same color to the same name.
  * 
  * Edge case handling:
- * - Empty strings, whitespace-only, or names with only special characters will 
- *   still produce a valid color (defaults to a distributed selection based on 
- *   character codes, or falls back to a neutral color for truly empty input)
+ * - Empty strings or whitespace-only names will fall back to a neutral gray color
+ * - Names containing only special characters will still produce a valid color based 
+ *   on their character codes through the hash function
  * 
  * Color selection:
  * - Uses a curated list of distinct colors for better visual differentiation
@@ -99,14 +99,12 @@ const getColorFromName = (name: string): string => {
     return 'bg-gray-500';
   }
   
-  // Use a better hash function (djb2) for more even distribution
+  // Use djb2 hash function with unsigned 32-bit integer for consistent results
   const hash = trimmedName.split('').reduce((acc, char) => {
-    return ((acc << 5) + acc) + char.charCodeAt(0);
+    return (((acc << 5) + acc) + char.charCodeAt(0)) >>> 0;
   }, 5381);
   
-  // Ensure positive index
-  const index = Math.abs(hash) % colors.length;
-  return colors[index];
+  return colors[hash % colors.length];
 };
 
 export const Avatar: React.FC<AvatarProps> = ({
