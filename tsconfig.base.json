@@ -19,8 +19,8 @@
     "customConditions": ["@rp-hris/source"],
     "baseUrl": ".",
     "paths": {
-      "@rp-hris/models": ["libs/models/src/index.ts"],
-      "@rp-hris/models/*": ["libs/models/src/*"]
+      "@rp-hris/types": ["libs/types/src/index.ts"],
+      "@rp-hris/types/*": ["libs/types/src/*"]
     }
   }
 }

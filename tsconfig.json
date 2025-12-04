@@ -16,7 +16,7 @@
       "path": "./apps/api"
     },
     {
-      "path": "./libs/models"
+      "path": "./libs/types"
     },
     {
       "path": "./libs/ui-components"

@@ -4,7 +4,7 @@
   "include": [],
   "references": [
     {
-      "path": "../../libs/models"
+      "path": "../../libs/types"
     },
     {
       "path": "./tsconfig.app.json"
