@@ -1,9 +1,13 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, createContext, useContext } from 'react';
+
+type PaddingSize = 'none' | 'sm' | 'md' | 'lg';
+
+const CardContext = createContext<{ padding: PaddingSize }>({ padding: 'md' });
 
 export interface CardProps {
   children: ReactNode;
   className?: string;
-  padding?: 'none' | 'sm' | 'md' | 'lg';
+  padding?: PaddingSize;
   shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
   rounded?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'full';
   border?: boolean;
@@ -29,6 +33,20 @@ const paddingStyles = {
   sm: 'p-3',
   md: 'p-4',
   lg: 'p-6',
+};
+
+const headerSpacingStyles = {
+  none: '',
+  sm: 'pb-3 mb-3',
+  md: 'pb-4 mb-4',
+  lg: 'pb-6 mb-6',
+};
+
+const footerSpacingStyles = {
+  none: '',
+  sm: 'pt-3 mt-3',
+  md: 'pt-4 mt-4',
+  lg: 'pt-6 mt-6',
 };
 
 const shadowStyles = {
@@ -61,36 +79,46 @@ export const Card: React.FC<CardProps> & {
   border = true,
 }) => {
   return (
-    <div
-      className={`
-        bg-white
-        ${paddingStyles[padding]}
-        ${shadowStyles[shadow]}
-        ${roundedStyles[rounded]}
-        ${border ? 'border border-gray-200' : ''}
-        ${className}
-      `}
-    >
+    <CardContext.Provider value={{ padding }}>
+      <div
+        className={`
+          bg-white
+          ${paddingStyles[padding]}
+          ${shadowStyles[shadow]}
+          ${roundedStyles[rounded]}
+          ${border ? 'border border-gray-200' : ''}
+          ${className}
+        `}
+      >
+        {children}
+      </div>
+    </CardContext.Provider>
+  );
+};
+
+const CardHeader: React.FC<CardHeaderProps> = ({ children, className = '' }) => {
+  const { padding } = useContext(CardContext);
+  const borderClass = padding === 'none' ? '' : 'border-b border-gray-200';
+  return (
+    <div className={`${borderClass} ${headerSpacingStyles[padding]} ${className}`}>
       {children}
     </div>
   );
 };
 
-const CardHeader: React.FC<CardHeaderProps> = ({ children, className = '' }) => (
-  <div className={`border-b border-gray-200 pb-4 mb-4 ${className}`}>
-    {children}
-  </div>
-);
-
 const CardBody: React.FC<CardBodyProps> = ({ children, className = '' }) => (
   <div className={className}>{children}</div>
 );
 
-const CardFooter: React.FC<CardFooterProps> = ({ children, className = '' }) => (
-  <div className={`border-t border-gray-200 pt-4 mt-4 ${className}`}>
-    {children}
-  </div>
-);
+const CardFooter: React.FC<CardFooterProps> = ({ children, className = '' }) => {
+  const { padding } = useContext(CardContext);
+  const borderClass = padding === 'none' ? '' : 'border-t border-gray-200';
+  return (
+    <div className={`${borderClass} ${footerSpacingStyles[padding]} ${className}`}>
+      {children}
+    </div>
+  );
+};
 
 Card.Header = CardHeader;
 Card.Body = CardBody;
